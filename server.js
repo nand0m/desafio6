@@ -1,27 +1,33 @@
 const express = require('express');
-const PORT = 8080;
-const app = express();
-const { Router } = express;
-const router = Router();
-const fs = require('fs');
-
 const { Server: HttpServer } = require('http');
 const { Server:IOServer } = require('socket.io');
+const app = express();
 const httpServer = new HttpServer(app);
 const io = new IOServer(httpServer);
+app.use(express.static('./public'));
 
 
 
+const { Router } = express;
+const router = Router();
+
+const fs = require('fs');
+
+
+
+
+
+// const PORT = 8080;
 
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 app.use('/api', router);
-app.use(express.static('./public'));
 
-const server = app.listen(8080, () => {
-    console.log('SERVER ON en http://localhost:8080')
-})
+
+httpServer.listen(8080, () => {
+    console.log('SERVER ON en http://localhost:8080');
+});
 
 
 app.set('view engine', 'ejs');
@@ -58,15 +64,17 @@ router.post('/productos', (req, resp) => {
 
 
 
-
 io.on('connection', (socket) => {
-    console.log('Cliente conectado');
-    socket.emit('messages', chat_persistente);
+    
+    console.log(chat_persistente.getAll());
+    socket.emit('messages', chat_persistente.getAll());
 
     socket.on('new-message', data => {
-        messages.push(data);
-        io.sockets.emit('messages', chat_persistente);
+        chat_persistente.save(data);
+        io.sockets.emit('messages', chat_persistente.getAll());
     })
+
+    console.log('Cliente conectado');
 })
 
 
@@ -240,8 +248,8 @@ class Chat {
 
 }
 
-let chat_persistente = new Chat('./chat.json');
+let chat_persistente = new Chat('./chat_persistente.json');
 
-let inicia_chat = {"email": "server@server.com", "dateTime": "0", "msg": "Bienvenido"};
+let inicia_chat = {email: "server@server.com", dateTime: "0", msg: "Bienvenido"};
 
 chat_persistente.save(inicia_chat);
